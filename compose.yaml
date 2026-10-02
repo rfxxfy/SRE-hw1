@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tasks
+      POSTGRES_USER: tasks
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasks -d tasks"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  migrate:
+    build: .
+    image: taskboard:local
+    command: ["python", "-m", "app.migrate"]
+    environment:
+      DATABASE_URL: postgresql://tasks@db:5432/tasks
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: taskboard:local
+    environment:
+      DATABASE_URL: postgresql://tasks@db:5432/tasks
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PORT: ${PORT:-8000}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

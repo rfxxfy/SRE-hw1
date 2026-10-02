@@ -1,0 +1,28 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #243041;
+  background: #f4f6f9;
+}
+
+body { margin: 0; }
+main { max-width: 720px; margin: 48px auto; padding: 0 20px; }
+h1 { margin-bottom: 4px; }
+header p { margin-top: 0; color: #596579; }
+form, li { background: #fff; border: 1px solid #dbe1e9; border-radius: 10px; }
+form { padding: 20px; margin: 28px 0; }
+form h2 { margin-top: 0; }
+label { display: block; font-weight: 600; margin: 14px 0 6px; }
+input, textarea { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #acb8c7; border-radius: 6px; font: inherit; }
+button { border: 0; border-radius: 6px; padding: 9px 14px; background: #245bb5; color: #fff; font: inherit; cursor: pointer; }
+button:hover { background: #174588; }
+button.secondary { background: #e9eef5; color: #243041; }
+button.secondary:hover { background: #dce5ef; }
+.form-actions, .task-actions { display: flex; gap: 8px; margin-top: 16px; }
+ul { list-style: none; padding: 0; }
+li { padding: 16px 20px; margin-bottom: 10px; }
+.task-top { display: flex; align-items: flex-start; gap: 10px; }
+.task-top input { width: auto; margin-top: 5px; }
+.task-title { font-weight: 600; overflow-wrap: anywhere; }
+.done .task-title { text-decoration: line-through; color: #667386; }
+.task-description { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0 24px; }
+#message { min-height: 1.5em; color: #a02d2d; }
