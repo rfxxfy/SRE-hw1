@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: taskboard-migrate
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: taskboard:k8s-v1
+          imagePullPolicy: Never
+          command: ["python", "-m", "app.migrate"]
+          env:
+            - name: DATABASE_URL
+              value: postgresql://tasks@taskboard-postgres:5432/tasks
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: taskboard-db
+                  key: password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

@@ -52,7 +52,7 @@ def create_app(database_url=None):
     @app.get("/readyz")
     def ready():
         with connect() as connection:
-            connection.execute("SELECT 1")
+            connection.execute("SELECT 1 FROM tasks LIMIT 0")
         return {"status": "ok"}
 
     @app.get("/api/tasks")

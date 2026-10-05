@@ -41,3 +41,5 @@ gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --access-l
 ```
 
 Структура: `app/web.py` — HTTP API, `app/migrate.py` — создание схемы, `app/static/` — интерфейс, `compose.yaml` — запуск приложения и PostgreSQL.
+
+Для запуска в Kubernetes см. [инструкцию Minikube](k8s/README.md).

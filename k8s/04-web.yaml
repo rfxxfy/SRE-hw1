@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskboard-web
+  template:
+    metadata:
+      labels:
+        app: taskboard-web
+    spec:
+      containers:
+        - name: web
+          image: taskboard:k8s-v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              value: postgresql://tasks@taskboard-postgres:5432/tasks
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: taskboard-db
+                  key: password
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-web
+spec:
+  selector:
+    app: taskboard-web
+  ports:
+    - port: 8000
+      targetPort: 8000
