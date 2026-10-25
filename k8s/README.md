@@ -5,14 +5,16 @@
 ```sh
 minikube start --driver=docker --container-runtime=docker --cpus=2 --memory=3072
 eval "$(minikube docker-env)"
-docker build -t taskboard:k8s-v1 .
-docker save taskboard:k8s-v1 -o /tmp/taskboard-k8s-v1.tar
+docker build -t taskboard:k8s-v2 .
+docker save taskboard:k8s-v2 -o /tmp/taskboard-k8s-v2.tar
 eval "$(minikube docker-env -u)"
-minikube image load /tmp/taskboard-k8s-v1.tar
+minikube image load /tmp/taskboard-k8s-v2.tar
 docker pull postgres:16-alpine
 minikube image load postgres:16-alpine
-rm /tmp/taskboard-k8s-v1.tar
-kubectl run kubectl-practice --image=taskboard:k8s-v1 --image-pull-policy=Never --restart=Never --command -- python -c 'print("kubectl-ok")'
+docker pull quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+minikube image load quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+rm /tmp/taskboard-k8s-v2.tar
+kubectl run kubectl-practice --image=taskboard:k8s-v2 --image-pull-policy=Never --restart=Never --command -- python -c 'print("kubectl-ok")'
 kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/kubectl-practice --timeout=90s
 kubectl get pod kubectl-practice
 kubectl logs kubectl-practice
@@ -39,5 +41,7 @@ kubectl get pods -l app=taskboard-web
 ```
 
 PostgreSQL оставляется в одной реплике, поскольку он использует один постоянный том. Пароль в `00-secret.yaml` — учебное значение для локального Minikube. Для другого окружения замените его перед запуском.
+
+Для установки VictoriaMetrics и сбора метрик см. [инструкцию по мониторингу](../monitoring/README.md).
 
 Удалить ресурсы задания: `kubectl delete -f k8s/`. Удаление PVC удалит данные БД.

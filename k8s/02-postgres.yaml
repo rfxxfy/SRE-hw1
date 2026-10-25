@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: taskboard-postgres
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9187"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: postgres
@@ -46,6 +50,28 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+        - name: postgres-exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: DATA_SOURCE_URI
+              value: localhost:5432/tasks?sslmode=disable
+            - name: DATA_SOURCE_USER
+              value: tasks
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: taskboard-db
+                  key: password
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
       volumes:
         - name: postgres-data
           persistentVolumeClaim:

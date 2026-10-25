@@ -30,7 +30,7 @@ services:
       DATABASE_URL: postgresql://tasks@db:5432/tasks
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PORT: ${PORT:-8000}
-      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     depends_on:

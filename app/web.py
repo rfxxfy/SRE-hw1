@@ -1,7 +1,16 @@
 import os
 
 import psycopg
-from flask import Flask, current_app, jsonify, request, send_from_directory
+from flask import Flask, Response, current_app, jsonify, request, send_from_directory
+from prometheus_client import (
+    CollectorRegistry,
+    Counter,
+    GCCollector,
+    PlatformCollector,
+    ProcessCollector,
+)
+from prometheus_client.openmetrics.exposition import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_flask_exporter import PrometheusMetrics
 from psycopg.rows import dict_row
 
 
@@ -37,9 +46,23 @@ def task_input(data):
 def create_app(database_url=None):
     app = Flask(__name__, static_folder="static")
     app.config["DATABASE_URL"] = database_url or os.environ["DATABASE_URL"]
+    registry = CollectorRegistry(auto_describe=True)
+    ProcessCollector(registry=registry)
+    PlatformCollector(registry=registry)
+    GCCollector(registry=registry)
+    metrics = PrometheusMetrics(app, path=None, group_by="url_rule", registry=registry)
+    tasks_created = Counter("taskboard_tasks_created_total", "Tasks created", registry=registry)
+    tasks_updated = Counter("taskboard_tasks_updated_total", "Tasks updated", registry=registry)
+    tasks_completed = Counter("taskboard_tasks_completed_total", "Tasks marked done", registry=registry)
+    tasks_deleted = Counter("taskboard_tasks_deleted_total", "Tasks deleted", registry=registry)
 
     def connect():
         return psycopg.connect(current_app.config["DATABASE_URL"], row_factory=dict_row)
+
+    @app.get("/metrics")
+    @metrics.do_not_track()
+    def metrics_endpoint():
+        return Response(generate_latest(registry), content_type=CONTENT_TYPE_LATEST)
 
     @app.get("/")
     def index():
@@ -74,6 +97,9 @@ def create_app(database_url=None):
                 f"INSERT INTO tasks (title, description, done) VALUES (%s, %s, %s) RETURNING {TASK_FIELDS}",
                 values,
             ).fetchone()
+        tasks_created.inc()
+        if row["done"]:
+            tasks_completed.inc()
         return jsonify(task_json(row)), 201, {"Location": f"/api/tasks/{row['id']}"}
 
     @app.get("/api/tasks/<int:task_id>")
@@ -93,14 +119,20 @@ def create_app(database_url=None):
             return {"error": error}, 400
 
         with connect() as connection:
+            existing = connection.execute(
+                "SELECT done FROM tasks WHERE id = %s FOR UPDATE", (task_id,)
+            ).fetchone()
+            if existing is None:
+                return {"error": "Task not found"}, 404
             row = connection.execute(
                 f"""UPDATE tasks
                     SET title = %s, description = %s, done = %s, updated_at = now()
                     WHERE id = %s RETURNING {TASK_FIELDS}""",
                 (*values, task_id),
             ).fetchone()
-        if row is None:
-            return {"error": "Task not found"}, 404
+        tasks_updated.inc()
+        if not existing["done"] and row["done"]:
+            tasks_completed.inc()
         return jsonify(task_json(row))
 
     @app.delete("/api/tasks/<int:task_id>")
@@ -111,6 +143,7 @@ def create_app(database_url=None):
             ).fetchone()
         if row is None:
             return {"error": "Task not found"}, 404
+        tasks_deleted.inc()
         return "", 204
 
     return app

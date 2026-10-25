@@ -4,3 +4,6 @@
 __pycache__
 *.pyc
 *.zip
+*.mp4
+*.tgz
+.DS_Store

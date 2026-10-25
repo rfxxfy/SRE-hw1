@@ -37,9 +37,11 @@ python3.12 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 python -m app.migrate
-gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --access-logfile - --error-logfile - app.wsgi:application
+gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1} --access-logfile - --error-logfile - app.wsgi:application
 ```
 
 Структура: `app/web.py` — HTTP API, `app/migrate.py` — создание схемы, `app/static/` — интерфейс, `compose.yaml` — запуск приложения и PostgreSQL.
 
 Для запуска в Kubernetes см. [инструкцию Minikube](k8s/README.md).
+
+Приложение отдаёт метрики по `GET /metrics`. Установка VictoriaMetrics и проверка сбора описаны в [инструкции по мониторингу](monitoring/README.md).

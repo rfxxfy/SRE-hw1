@@ -12,4 +12,4 @@ RUN useradd --create-home appuser
 USER appuser
 
 EXPOSE 8000
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --access-logfile - --error-logfile - app.wsgi:application"]
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1} --access-logfile - --error-logfile - app.wsgi:application"]

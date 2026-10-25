@@ -11,13 +11,18 @@ spec:
     metadata:
       labels:
         app: taskboard-web
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: web
-          image: taskboard:k8s-v1
+          image: taskboard:k8s-v2
           imagePullPolicy: Never
           ports:
-            - containerPort: 8000
+            - name: http
+              containerPort: 8000
           env:
             - name: DATABASE_URL
               value: postgresql://tasks@taskboard-postgres:5432/tasks

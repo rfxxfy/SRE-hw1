@@ -9,7 +9,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: migrate
-          image: taskboard:k8s-v1
+          image: taskboard:k8s-v2
           imagePullPolicy: Never
           command: ["python", "-m", "app.migrate"]
           env:
