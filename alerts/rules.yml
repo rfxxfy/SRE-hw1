@@ -1,0 +1,43 @@
+groups:
+  - name: taskboard-business
+    interval: 15s
+    rules:
+      - alert: TaskboardDeletionBurst
+        expr: sum(increase(taskboard_tasks_deleted_total{app="taskboard-web"}[10m])) >= 3
+        for: 30s
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Массовое удаление задач"
+          description: "За 10 минут удалено не менее трёх задач. Проверьте действия пользователя и клиента API."
+      - alert: TaskboardUpdateBurst
+        expr: sum(increase(taskboard_tasks_updated_total{app="taskboard-web"}[10m])) >= 5
+        for: 30s
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Необычно много изменений задач"
+          description: "За 10 минут выполнено не менее пяти изменений задач. Проверьте повторные запросы и автоматические клиенты."
+  - name: taskboard-runtime
+    interval: 15s
+    rules:
+      - alert: TaskboardClientErrorBurst
+        expr: sum(increase(flask_http_request_total{app="taskboard-web",status=~"4.."}[10m])) >= 5
+        for: 30s
+        labels:
+          severity: warning
+          category: framework
+        annotations:
+          summary: "Много ошибочных HTTP-запросов"
+          description: "Flask зарегистрировал не менее пяти ответов 4xx за 10 минут. Проверьте клиентские запросы."
+      - alert: TaskboardHighMemory
+        expr: process_resident_memory_bytes{app="taskboard-web"} > 209715200
+        for: 2m
+        labels:
+          severity: critical
+          category: runtime
+        annotations:
+          summary: "Веб-процесс близок к лимиту памяти"
+          description: "RSS процесса в Pod {{ $labels.pod }} выше 200 MiB при лимите контейнера 256 MiB."

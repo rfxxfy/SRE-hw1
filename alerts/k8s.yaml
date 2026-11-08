@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskboard-alertmanager
+  template:
+    metadata:
+      labels:
+        app: taskboard-alertmanager
+    spec:
+      containers:
+        - name: alertmanager
+          image: quay.io/prometheus/alertmanager:v0.28.1
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+          ports:
+            - containerPort: 9093
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+          resources:
+            requests:
+              cpu: 30m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+              readOnly: true
+            - name: data
+              mountPath: /alertmanager
+      volumes:
+        - name: config
+          configMap:
+            name: taskboard-alertmanager-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-alertmanager
+spec:
+  selector:
+    app: taskboard-alertmanager
+  ports:
+    - port: 9093
+      targetPort: 9093
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-vmalert
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskboard-vmalert
+  template:
+    metadata:
+      labels:
+        app: taskboard-vmalert
+    spec:
+      containers:
+        - name: vmalert
+          image: victoriametrics/vmalert:v1.154.0
+          args:
+            - -rule=/etc/vmalert/rules.yml
+            - -datasource.url=http://vm-single-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+            - -remoteWrite.url=http://vm-single-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+            - -remoteRead.url=http://vm-single-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+            - -notifier.url=http://taskboard-alertmanager.monitoring.svc.cluster.local:9093
+            - -evaluationInterval=15s
+            - -httpListenAddr=:8880
+          ports:
+            - containerPort: 8880
+          readinessProbe:
+            tcpSocket:
+              port: 8880
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: rules
+              mountPath: /etc/vmalert
+              readOnly: true
+      volumes:
+        - name: rules
+          configMap:
+            name: taskboard-alert-rules
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-vmalert
+spec:
+  selector:
+    app: taskboard-vmalert
+  ports:
+    - port: 8880
+      targetPort: 8880
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-alert-receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskboard-alert-receiver
+  template:
+    metadata:
+      labels:
+        app: taskboard-alert-receiver
+    spec:
+      containers:
+        - name: receiver
+          image: taskboard:k8s-v2
+          imagePullPolicy: Never
+          command: [python, /srv/receiver.py]
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: code
+              mountPath: /srv
+              readOnly: true
+      volumes:
+        - name: code
+          configMap:
+            name: taskboard-alert-receiver
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-alert-receiver
+spec:
+  selector:
+    app: taskboard-alert-receiver
+  ports:
+    - port: 8080
+      targetPort: 8080

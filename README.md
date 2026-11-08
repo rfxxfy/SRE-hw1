@@ -45,3 +45,5 @@ gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1} --access-l
 Для запуска в Kubernetes см. [инструкцию Minikube](k8s/README.md).
 
 Приложение отдаёт метрики по `GET /metrics`. Установка VictoriaMetrics и проверка сбора описаны в [инструкции по мониторингу](monitoring/README.md).
+
+Правила алертинга, Alertmanager и демонстрация уведомлений описаны в [инструкции по алертам](alerts/README.md).
