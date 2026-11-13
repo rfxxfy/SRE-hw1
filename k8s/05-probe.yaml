@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-probe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskboard-probe
+  template:
+    metadata:
+      labels:
+        app: taskboard-probe
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9115"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: probe
+          image: taskboard:grafana-v1
+          imagePullPolicy: Never
+          command: ["python", "-m", "app.probe"]
+          ports:
+            - name: metrics
+              containerPort: 9115
+          env:
+            - name: PROBE_URL
+              value: http://taskboard-web:8000
+            - name: PROBE_INTERVAL_SECONDS
+              value: "15"
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9115
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
